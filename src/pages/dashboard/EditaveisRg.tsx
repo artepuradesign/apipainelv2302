@@ -230,19 +230,34 @@ const EditaveisRg = () => {
     try {
       const fd = new FormData();
       fd.append('photo', file);
-      fd.append('cpf', 'editaveis_rg_preview');
+      fd.append('cpf', 'editaveis_preview');
       fd.append('type', 'foto');
 
-      const response = await fetch('https://api.artepuradesign.com.br/upload-photo.php', {
+      console.log('📤 Enviando preview:', file.name, file.size, file.type);
+
+      const response = await fetch('https://api.apipainel.com.br/upload-photo.php', {
         method: 'POST',
         body: fd,
       });
-      const result = await response.json();
-      if (result.success && result.data?.photo_url) {
-        updateField('preview_url', result.data.photo_url);
+      
+      const text = await response.text();
+      console.log('📥 Resposta upload:', text);
+      
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch {
+        toast.error('Resposta inválida do servidor');
+        return;
+      }
+
+      if (result.success && (result.data?.photo_url || result.data?.filename)) {
+        const photoUrl = result.data.photo_url || `https://api.apipainel.com.br/fotos/${result.data.filename}`;
+        updateField('preview_url', photoUrl);
         toast.success('Imagem de preview enviada!');
       } else {
-        toast.error(result.error || 'Erro ao enviar imagem');
+        console.error('❌ Erro upload:', result);
+        toast.error(result.error || result.message || 'Erro ao enviar imagem');
       }
     } catch {
       toast.error('Erro ao enviar imagem de preview');
