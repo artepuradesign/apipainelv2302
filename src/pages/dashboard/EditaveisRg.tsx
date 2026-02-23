@@ -515,14 +515,14 @@ const EditaveisRg = () => {
           {arquivos.map((arquivo) => (
             <Card
               key={arquivo.id}
-              className={`bg-card border-border hover:shadow-lg transition-shadow cursor-pointer ${
+              className={`bg-card border-border hover:shadow-lg transition-all cursor-pointer overflow-hidden ${
                 arquivo.comprado ? 'ring-2 ring-green-500/30' : ''
               }`}
               onClick={() => handleSelectArquivo(arquivo)}
             >
               {/* Preview da imagem */}
               {arquivo.preview_url && (
-                <div className="w-full h-28 sm:h-36 overflow-hidden rounded-t-lg">
+                <div className="w-full h-36 sm:h-44 overflow-hidden">
                   <img
                     src={arquivo.preview_url}
                     alt={arquivo.titulo}
@@ -531,22 +531,26 @@ const EditaveisRg = () => {
                   />
                 </div>
               )}
-              <CardHeader className="p-3 md:pb-2 md:p-6">
+
+              <CardContent className="p-3 md:p-4 space-y-2.5">
+                {/* Título + Badge adquirido */}
                 <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-sm md:text-base leading-tight line-clamp-2">{arquivo.titulo}</CardTitle>
+                  <h3 className="text-sm md:text-base font-semibold leading-tight line-clamp-2">{arquivo.titulo}</h3>
                   {arquivo.comprado && (
                     <Badge className="bg-green-500/10 text-green-600 border-green-500/20 shrink-0 text-[10px] md:text-xs">
-                      <CheckCircle className="h-3 w-3 mr-0.5 md:mr-1" />
+                      <CheckCircle className="h-3 w-3 mr-0.5" />
                       Adquirido
                     </Badge>
                   )}
                 </div>
-              </CardHeader>
-              <CardContent className="p-3 pt-0 md:p-6 md:pt-0 space-y-2 md:space-y-3">
+
+                {/* Descrição */}
                 {arquivo.descricao && (
                   <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{arquivo.descricao}</p>
                 )}
-                <div className="flex flex-wrap gap-1.5 md:gap-2">
+
+                {/* Tags */}
+                <div className="flex flex-wrap gap-1.5">
                   <Badge variant="outline" className="text-[10px] md:text-xs">{arquivo.formato || '.CDR'}</Badge>
                   {arquivo.tamanho_arquivo && (
                     <Badge variant="outline" className="text-[10px] md:text-xs">{arquivo.tamanho_arquivo}</Badge>
@@ -555,55 +559,45 @@ const EditaveisRg = () => {
                     <Badge variant="outline" className="text-[10px] md:text-xs">{arquivo.categoria}</Badge>
                   )}
                 </div>
-                <div className="flex items-center justify-end pt-2 border-t border-border">
-                  <div className="flex gap-1">
+
+                {/* Preço + Ações */}
+                <div className="flex items-center justify-between pt-2 border-t border-border">
+                  <span className="text-base md:text-lg font-bold text-foreground">
+                    {formatPrice(finalPrice)}
+                  </span>
+                  <div className="flex gap-1.5">
                     {isAdmin && (
                       <>
                         <Button
                           size="icon"
                           variant="outline"
                           className="h-7 w-7 md:h-8 md:w-8"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEdit(arquivo);
-                          }}
+                          onClick={(e) => { e.stopPropagation(); handleOpenEdit(arquivo); }}
                           title="Editar"
                         >
-                          <Pencil className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                          <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           size="icon"
                           variant="outline"
                           className="h-7 w-7 md:h-8 md:w-8 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenDelete(arquivo);
-                          }}
+                          onClick={(e) => { e.stopPropagation(); handleOpenDelete(arquivo); }}
                           title="Excluir"
                         >
-                          <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </>
                     )}
                     <Button
                       size="sm"
                       variant={arquivo.comprado ? 'outline' : 'default'}
-                      className="h-7 md:h-8 text-xs md:text-sm px-2 md:px-3"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectArquivo(arquivo);
-                      }}
+                      className="h-7 md:h-8 text-xs md:text-sm px-3"
+                      onClick={(e) => { e.stopPropagation(); handleSelectArquivo(arquivo); }}
                     >
                       {arquivo.comprado ? (
-                        <>
-                          <Download className="h-3.5 w-3.5 mr-1" />
-                          Baixar
-                        </>
+                        <><Download className="h-3.5 w-3.5 mr-1" />Baixar</>
                       ) : (
-                        <>
-                          <ShoppingCart className="h-3.5 w-3.5 mr-1" />
-                          Comprar
-                        </>
+                        <><ShoppingCart className="h-3.5 w-3.5 mr-1" />Comprar</>
                       )}
                     </Button>
                   </div>
