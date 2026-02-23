@@ -130,4 +130,36 @@ export const editaveisRgService = {
     const endpoint = `/editaveis-rg/minhas-compras${qs.toString() ? `?${qs.toString()}` : ''}`;
     return apiRequest<{ data: EditavelRgCompra[]; pagination: { total: number; limit: number; offset: number } }>(endpoint);
   },
+
+  async criar(data: {
+    titulo: string;
+    descricao?: string;
+    categoria?: string;
+    tipo?: string;
+    versao?: string;
+    formato?: string;
+    tamanho_arquivo?: string;
+    arquivo_url: string;
+    preview_url?: string;
+    preco?: number;
+  }) {
+    return apiRequest<{ id: number }>('/editaveis-rg/criar', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async atualizar(data: { id: number; [key: string]: any }) {
+    return apiRequest<{ id: number }>('/editaveis-rg/atualizar', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async excluir(id: number) {
+    return apiRequest<{ id: number }>('/editaveis-rg/excluir', {
+      method: 'DELETE',
+      body: JSON.stringify({ id }),
+    });
+  },
 };
