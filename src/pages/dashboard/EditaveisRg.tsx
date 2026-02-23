@@ -561,10 +561,7 @@ const EditaveisRg = () => {
                 </div>
 
                 {/* Preço + Ações */}
-                <div className="flex items-center justify-between pt-2 border-t border-border">
-                  <span className="text-base md:text-lg font-bold text-foreground">
-                    {formatPrice(finalPrice)}
-                  </span>
+                <div className="flex items-center justify-end pt-2 border-t border-border">
                   <div className="flex gap-1.5">
                     {isAdmin && (
                       <>
@@ -589,15 +586,16 @@ const EditaveisRg = () => {
                       </>
                     )}
                     <Button
-                      size="sm"
+                      size="icon"
                       variant={arquivo.comprado ? 'outline' : 'default'}
-                      className="h-7 md:h-8 text-xs md:text-sm px-3"
+                      className="h-7 w-7 md:h-8 md:w-8"
                       onClick={(e) => { e.stopPropagation(); handleSelectArquivo(arquivo); }}
+                      title={arquivo.comprado ? 'Baixar' : 'Comprar'}
                     >
                       {arquivo.comprado ? (
-                        <><Download className="h-3.5 w-3.5 mr-1" />Baixar</>
+                        <Download className="h-3.5 w-3.5" />
                       ) : (
-                        <><ShoppingCart className="h-3.5 w-3.5 mr-1" />Comprar</>
+                        <ShoppingCart className="h-3.5 w-3.5" />
                       )}
                     </Button>
                   </div>
