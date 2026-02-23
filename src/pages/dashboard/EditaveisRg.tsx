@@ -555,10 +555,7 @@ const EditaveisRg = () => {
                     <Badge variant="outline" className="text-[10px] md:text-xs">{arquivo.categoria}</Badge>
                   )}
                 </div>
-                <div className="flex items-center justify-between pt-2 border-t border-border">
-                  <span className="text-xs md:text-sm font-semibold text-foreground">
-                    {formatPrice(finalPrice)}
-                  </span>
+                <div className="flex items-center justify-end pt-2 border-t border-border">
                   <div className="flex gap-1">
                     {isAdmin && (
                       <>
