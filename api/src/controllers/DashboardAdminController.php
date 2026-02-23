@@ -369,7 +369,7 @@ class DashboardAdminController {
                          FROM central_cash cc
                          LEFT JOIN users u ON cc.user_id = u.id
                          LEFT JOIN wallet_transactions wt ON cc.reference_table = 'wallet_transactions' AND cc.reference_id = wt.id
-                         WHERE cc.payment_method IN ('pix', 'credit', 'paypal') AND cc.amount > 0
+                         WHERE (cc.payment_method IN ('pix', 'credit', 'paypal') OR (cc.transaction_type = 'consulta' AND cc.payment_method = 'saldo')) AND cc.amount > 0
                          ORDER BY cc.created_at DESC LIMIT ?";
                 $stmt = $this->db->prepare($query);
                 $stmt->execute([intval($limit)]);
