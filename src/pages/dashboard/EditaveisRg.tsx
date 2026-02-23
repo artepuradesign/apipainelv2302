@@ -520,29 +520,72 @@ const EditaveisRg = () => {
               }`}
               onClick={() => handleSelectArquivo(arquivo)}
             >
-              {/* Preview da imagem */}
-              {arquivo.preview_url && (
-                <div className="w-full h-36 sm:h-44 overflow-hidden">
+              {/* Preview da imagem com botão sobreposto */}
+              <div className="relative w-full h-36 sm:h-44 overflow-hidden bg-muted">
+                {arquivo.preview_url ? (
                   <img
                     src={arquivo.preview_url}
                     alt={arquivo.titulo}
                     className="w-full h-full object-cover"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <FileText className="h-10 w-10 text-muted-foreground/40" />
+                  </div>
+                )}
+                {/* Botão carrinho/download no canto superior direito */}
+                <div className="absolute top-2 right-2 flex gap-1.5">
+                  {isAdmin && (
+                    <>
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="h-8 w-8 rounded-full shadow-md backdrop-blur-sm bg-background/80"
+                        onClick={(e) => { e.stopPropagation(); handleOpenEdit(arquivo); }}
+                        title="Editar"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="h-8 w-8 rounded-full shadow-md backdrop-blur-sm bg-background/80 text-destructive"
+                        onClick={(e) => { e.stopPropagation(); handleOpenDelete(arquivo); }}
+                        title="Excluir"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    size="icon"
+                    variant={arquivo.comprado ? 'secondary' : 'default'}
+                    className="h-8 w-8 rounded-full shadow-md"
+                    onClick={(e) => { e.stopPropagation(); handleSelectArquivo(arquivo); }}
+                    title={arquivo.comprado ? 'Baixar' : 'Comprar'}
+                  >
+                    {arquivo.comprado ? (
+                      <Download className="h-4 w-4" />
+                    ) : (
+                      <ShoppingCart className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
-              )}
-
-              <CardContent className="p-3 md:p-4 space-y-2.5">
-                {/* Título + Badge adquirido */}
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-sm md:text-base font-semibold leading-tight line-clamp-2">{arquivo.titulo}</h3>
-                  {arquivo.comprado && (
-                    <Badge className="bg-green-500/10 text-green-600 border-green-500/20 shrink-0 text-[10px] md:text-xs">
+                {/* Badge adquirido */}
+                {arquivo.comprado && (
+                  <div className="absolute top-2 left-2">
+                    <Badge className="bg-green-500/90 text-white border-0 text-[10px] shadow-md">
                       <CheckCircle className="h-3 w-3 mr-0.5" />
                       Adquirido
                     </Badge>
-                  )}
-                </div>
+                  </div>
+                )}
+              </div>
+
+              <CardContent className="p-3 md:p-4 space-y-2">
+                {/* Título */}
+                <h3 className="text-sm md:text-base font-semibold leading-tight line-clamp-2">{arquivo.titulo}</h3>
 
                 {/* Descrição */}
                 {arquivo.descricao && (
@@ -558,47 +601,6 @@ const EditaveisRg = () => {
                   {arquivo.categoria && (
                     <Badge variant="outline" className="text-[10px] md:text-xs">{arquivo.categoria}</Badge>
                   )}
-                </div>
-
-                {/* Preço + Ações */}
-                <div className="flex items-center justify-end pt-2 border-t border-border">
-                  <div className="flex gap-1.5">
-                    {isAdmin && (
-                      <>
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-7 w-7 md:h-8 md:w-8"
-                          onClick={(e) => { e.stopPropagation(); handleOpenEdit(arquivo); }}
-                          title="Editar"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-7 w-7 md:h-8 md:w-8 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                          onClick={(e) => { e.stopPropagation(); handleOpenDelete(arquivo); }}
-                          title="Excluir"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </>
-                    )}
-                    <Button
-                      size="icon"
-                      variant={arquivo.comprado ? 'outline' : 'default'}
-                      className="h-7 w-7 md:h-8 md:w-8"
-                      onClick={(e) => { e.stopPropagation(); handleSelectArquivo(arquivo); }}
-                      title={arquivo.comprado ? 'Baixar' : 'Comprar'}
-                    >
-                      {arquivo.comprado ? (
-                        <Download className="h-3.5 w-3.5" />
-                      ) : (
-                        <ShoppingCart className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
-                  </div>
                 </div>
               </CardContent>
             </Card>
