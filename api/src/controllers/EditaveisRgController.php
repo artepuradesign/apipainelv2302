@@ -55,7 +55,7 @@ class EditaveisRgController {
     }
 
     /**
-     * POST /editaveis-rg/comprar - Comprar arquivo (debita saldo + registra compra + registra histórico)
+     * POST /editaveis-rg/comprar - Comprar arquivo
      */
     public function comprar() {
         try {
@@ -76,17 +76,14 @@ class EditaveisRgController {
             $arquivoId = (int)$input['arquivo_id'];
             $walletType = $input['wallet_type'] ?? 'main';
 
-            // Buscar arquivo
             $arquivo = $this->model->getArquivo($arquivoId);
             if (!$arquivo) {
                 Response::error('Arquivo não encontrado ou inativo', 404);
                 return;
             }
 
-            // Verificar se já comprou
             $compraExistente = $this->model->getCompra($userId, $arquivoId);
             if ($compraExistente) {
-                // Já comprou, retornar sucesso com URL de download
                 Response::success([
                     'compra_id' => $compraExistente['id'],
                     'arquivo_url' => $arquivo['arquivo_url'],
@@ -98,7 +95,6 @@ class EditaveisRgController {
 
             $preco = (float)$arquivo['preco'];
 
-            // Verificar saldo do usuário
             $saldoField = $walletType === 'plan' ? 'saldo_plano' : 'saldo';
             $userQuery = "SELECT saldo, saldo_plano FROM users WHERE id = ?";
             $userStmt = $this->db->prepare($userQuery);
@@ -117,16 +113,13 @@ class EditaveisRgController {
                 return;
             }
 
-            // Iniciar transação
             $this->db->beginTransaction();
 
-            // 1) Debitar saldo
             $novoSaldo = $saldoAtual - $preco;
             $updateSaldo = "UPDATE users SET {$saldoField} = ?, saldo_atualizado = 1, updated_at = NOW() WHERE id = ?";
             $updateStmt = $this->db->prepare($updateSaldo);
             $updateStmt->execute([$novoSaldo, $userId]);
 
-            // 2) Registrar transação na wallet_transactions
             $transDesc = "Compra editável: {$arquivo['titulo']}";
             $transQuery = "INSERT INTO wallet_transactions 
                           (user_id, wallet_type, type, amount, balance_before, balance_after, description, payment_method, status) 
@@ -135,7 +128,6 @@ class EditaveisRgController {
             $transStmt->execute([$userId, $walletType, -$preco, $saldoAtual, $novoSaldo, $transDesc]);
             $transactionId = $this->db->lastInsertId();
 
-            // 3) Registrar na tabela consultations (padrão de registro como consultas)
             $saldoUsado = $walletType === 'plan' ? 'plano' : 'carteira';
             $metadata = json_encode([
                 'source' => 'editaveis-rg',
@@ -160,7 +152,6 @@ class EditaveisRgController {
             $consultationStmt = $this->db->prepare($consultationQuery);
             $consultationStmt->execute([$userId, $arquivo['titulo'], $preco, $ipAddress, $userAgent, $metadata]);
 
-            // 5) Registrar compra
             $compraId = $this->model->registrarCompra($userId, $arquivoId, $preco, 0, 'saldo');
 
             $this->db->commit();
@@ -207,21 +198,18 @@ class EditaveisRgController {
 
             $arquivoId = (int)$input['arquivo_id'];
 
-            // Verificar se comprou
             $compra = $this->model->getCompra($userId, $arquivoId);
             if (!$compra) {
                 Response::error('Você não adquiriu este arquivo', 403);
                 return;
             }
 
-            // Buscar arquivo
             $arquivo = $this->model->getArquivo($arquivoId);
             if (!$arquivo) {
                 Response::error('Arquivo não encontrado', 404);
                 return;
             }
 
-            // Registrar download
             $this->model->registrarDownload($userId, $arquivoId);
 
             Response::success([
@@ -263,6 +251,143 @@ class EditaveisRgController {
 
         } catch (Exception $e) {
             Response::error('Erro ao listar compras: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Verificar se o usuário atual é admin ou suporte
+     */
+    private function isAdminOrSupport() {
+        $userId = AuthMiddleware::getCurrentUserId();
+        if (!$userId) return false;
+
+        $query = "SELECT user_role FROM users WHERE id = ? LIMIT 1";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return $user && in_array($user['user_role'], ['admin', 'suporte']);
+    }
+
+    /**
+     * POST /editaveis-rg/criar - Criar novo arquivo (admin/suporte)
+     */
+    public function criar() {
+        try {
+            if (!$this->isAdminOrSupport()) {
+                Response::error('Acesso negado', 403);
+                return;
+            }
+
+            $raw = file_get_contents('php://input');
+            $input = json_decode($raw, true);
+
+            if (!$input || !isset($input['titulo']) || !isset($input['arquivo_url'])) {
+                Response::error('titulo e arquivo_url são obrigatórios', 400);
+                return;
+            }
+
+            $query = "INSERT INTO editaveis_rg_arquivos (module_id, titulo, descricao, categoria, tipo, versao, formato, tamanho_arquivo, arquivo_url, preview_url, preco, ativo) 
+                      VALUES (85, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([
+                $input['titulo'],
+                $input['descricao'] ?? null,
+                $input['categoria'] ?? null,
+                $input['tipo'] ?? 'RG',
+                $input['versao'] ?? null,
+                $input['formato'] ?? '.CDR',
+                $input['tamanho_arquivo'] ?? null,
+                $input['arquivo_url'],
+                $input['preview_url'] ?? null,
+                (float)($input['preco'] ?? 0),
+            ]);
+
+            $id = $this->db->lastInsertId();
+
+            Response::success(['id' => (int)$id], 'Arquivo criado com sucesso');
+
+        } catch (Exception $e) {
+            Response::error('Erro ao criar arquivo: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * PUT /editaveis-rg/atualizar - Atualizar arquivo (admin/suporte)
+     */
+    public function atualizar() {
+        try {
+            if (!$this->isAdminOrSupport()) {
+                Response::error('Acesso negado', 403);
+                return;
+            }
+
+            $raw = file_get_contents('php://input');
+            $input = json_decode($raw, true);
+
+            if (!$input || !isset($input['id'])) {
+                Response::error('id é obrigatório', 400);
+                return;
+            }
+
+            $id = (int)$input['id'];
+            $sets = [];
+            $params = [];
+            $allowedFields = ['titulo', 'descricao', 'categoria', 'tipo', 'versao', 'formato', 'tamanho_arquivo', 'arquivo_url', 'preview_url', 'preco', 'ativo'];
+
+            foreach ($allowedFields as $field) {
+                if (array_key_exists($field, $input)) {
+                    $sets[] = "{$field} = ?";
+                    $params[] = $input[$field];
+                }
+            }
+
+            if (empty($sets)) {
+                Response::error('Nenhum campo para atualizar', 400);
+                return;
+            }
+
+            $params[] = $id;
+            $query = "UPDATE editaveis_rg_arquivos SET " . implode(', ', $sets) . ", updated_at = NOW() WHERE id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute($params);
+
+            Response::success(['id' => $id], 'Arquivo atualizado com sucesso');
+
+        } catch (Exception $e) {
+            Response::error('Erro ao atualizar arquivo: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * DELETE /editaveis-rg/excluir - Excluir arquivo (admin/suporte)
+     */
+    public function excluir() {
+        try {
+            if (!$this->isAdminOrSupport()) {
+                Response::error('Acesso negado', 403);
+                return;
+            }
+
+            $raw = file_get_contents('php://input');
+            $input = json_decode($raw, true);
+
+            if (!$input || !isset($input['id'])) {
+                Response::error('id é obrigatório', 400);
+                return;
+            }
+
+            $id = (int)$input['id'];
+
+            // Soft delete - apenas desativar
+            $query = "UPDATE editaveis_rg_arquivos SET ativo = 0, updated_at = NOW() WHERE id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$id]);
+
+            Response::success(['id' => $id], 'Arquivo excluído com sucesso');
+
+        } catch (Exception $e) {
+            Response::error('Erro ao excluir arquivo: ' . $e->getMessage(), 500);
         }
     }
 }

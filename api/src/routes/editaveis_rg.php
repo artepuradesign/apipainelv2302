@@ -34,6 +34,24 @@ switch ($method) {
             $controller->comprar();
         } elseif (strpos($path, '/editaveis-rg/download') !== false) {
             $controller->download();
+        } elseif (strpos($path, '/editaveis-rg/criar') !== false) {
+            $controller->criar();
+        } else {
+            Response::notFound('Endpoint não encontrado');
+        }
+        break;
+
+    case 'PUT':
+        if (strpos($path, '/editaveis-rg/atualizar') !== false) {
+            $controller->atualizar();
+        } else {
+            Response::notFound('Endpoint não encontrado');
+        }
+        break;
+
+    case 'DELETE':
+        if (strpos($path, '/editaveis-rg/excluir') !== false) {
+            $controller->excluir();
         } else {
             Response::notFound('Endpoint não encontrado');
         }
