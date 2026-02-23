@@ -163,10 +163,10 @@ class EditaveisRgController {
                 'user_id' => $userId,
                 'wallet_type' => $walletType,
             ]);
-            $ccQuery = "INSERT INTO central_cash (user_id, transaction_type, description, amount, payment_method, reference_table, reference_id, metadata, created_at) 
-                        VALUES (?, 'consulta', ?, ?, 'saldo', 'wallet_transactions', ?, ?, NOW())";
+            $ccQuery = "INSERT INTO central_cash (user_id, transaction_type, description, amount, balance_before, balance_after, payment_method, reference_table, reference_id, metadata, created_at) 
+                        VALUES (?, 'consulta', ?, ?, ?, ?, 'saldo', 'wallet_transactions', ?, ?, NOW())";
             $ccStmt = $this->db->prepare($ccQuery);
-            $ccStmt->execute([$userId, $ccDesc, $preco, $transactionId, $ccMeta]);
+            $ccStmt->execute([$userId, $ccDesc, $preco, $saldoAtual, $novoSaldo, $transactionId, $ccMeta]);
 
             $this->db->commit();
 
