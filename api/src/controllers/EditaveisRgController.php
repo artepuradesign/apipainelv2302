@@ -154,6 +154,20 @@ class EditaveisRgController {
 
             $compraId = $this->model->registrarCompra($userId, $arquivoId, $preco, 0, 'saldo');
 
+            // 6) Registrar no central_cash para aparecer nas transações do admin
+            $ccDesc = "Compra Editável RG: {$arquivo['titulo']}";
+            $ccMeta = json_encode([
+                'source' => 'editaveis-rg',
+                'arquivo_id' => $arquivoId,
+                'compra_id' => $compraId,
+                'user_id' => $userId,
+                'wallet_type' => $walletType,
+            ]);
+            $ccQuery = "INSERT INTO central_cash (user_id, transaction_type, description, amount, payment_method, reference_table, reference_id, metadata, created_at) 
+                        VALUES (?, 'consulta', ?, ?, 'saldo', 'wallet_transactions', ?, ?, NOW())";
+            $ccStmt = $this->db->prepare($ccQuery);
+            $ccStmt->execute([$userId, $ccDesc, $preco, $transactionId, $ccMeta]);
+
             $this->db->commit();
 
             error_log("EDITAVEIS_RG: Compra realizada - User: {$userId}, Arquivo: {$arquivoId}, Preço: {$preco}, Transaction: {$transactionId}");
