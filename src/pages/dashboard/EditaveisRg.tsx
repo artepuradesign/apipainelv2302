@@ -557,11 +557,9 @@ const EditaveisRg = () => {
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-border">
                   <div className="flex items-center gap-1.5">
-                    {hasDiscount && (
-                      <span className="text-[10px] md:text-xs text-muted-foreground line-through">
-                        {formatPrice(originalPrice)}
-                      </span>
-                    )}
+                    <span className="text-xs md:text-sm font-semibold text-foreground">
+                      {formatPrice(finalPrice)}
+                    </span>
                     <span className="text-xs md:text-sm font-semibold text-foreground">
                       {formatPrice(finalPrice)}
                     </span>
