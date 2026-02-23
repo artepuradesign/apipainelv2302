@@ -8,7 +8,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { FileText, Download, ShoppingCart, CheckCircle, Loader2, AlertCircle, Clock, Pencil, Trash2, Plus } from 'lucide-react';
+import { FileText, Download, ShoppingCart, CheckCircle, Loader2, AlertCircle, Clock, Pencil, Trash2, Plus, Upload, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
@@ -95,6 +95,8 @@ const EditaveisRg = () => {
   const [deletingArquivo, setDeletingArquivo] = useState<EditavelRgArquivo | null>(null);
   const [formData, setFormData] = useState<ArquivoFormData>(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingPreview, setIsUploadingPreview] = useState(false);
+  const previewFileRef = React.useRef<HTMLInputElement>(null);
 
   const walletBalance = balance.saldo || 0;
   const planBalance = balance.saldo_plano || 0;
@@ -215,6 +217,39 @@ const EditaveisRg = () => {
       preco: String(arquivo.preco ?? 0),
     });
     setShowEditModal(true);
+  };
+
+  const handlePreviewUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Selecione apenas arquivos de imagem');
+      return;
+    }
+    setIsUploadingPreview(true);
+    try {
+      const fd = new FormData();
+      fd.append('photo', file);
+      fd.append('cpf', 'editaveis_rg_preview');
+      fd.append('type', 'foto');
+
+      const response = await fetch('https://api.artepuradesign.com.br/upload-photo.php', {
+        method: 'POST',
+        body: fd,
+      });
+      const result = await response.json();
+      if (result.success && result.data?.photo_url) {
+        updateField('preview_url', result.data.photo_url);
+        toast.success('Imagem de preview enviada!');
+      } else {
+        toast.error(result.error || 'Erro ao enviar imagem');
+      }
+    } catch {
+      toast.error('Erro ao enviar imagem de preview');
+    } finally {
+      setIsUploadingPreview(false);
+      if (previewFileRef.current) previewFileRef.current.value = '';
+    }
   };
 
   const handleOpenDelete = (arquivo: EditavelRgArquivo) => {
@@ -357,8 +392,33 @@ const EditaveisRg = () => {
         <Input id="arquivo_url" value={formData.arquivo_url} onChange={e => updateField('arquivo_url', e.target.value)} placeholder="https://..." />
       </div>
       <div className="grid gap-1.5">
-        <Label htmlFor="preview_url">URL da Preview</Label>
-        <Input id="preview_url" value={formData.preview_url} onChange={e => updateField('preview_url', e.target.value)} placeholder="https://..." />
+        <Label>Imagem de Preview</Label>
+        <input
+          ref={previewFileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handlePreviewUpload}
+        />
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isUploadingPreview}
+            onClick={() => previewFileRef.current?.click()}
+            className="flex items-center gap-2"
+          >
+            {isUploadingPreview ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            {isUploadingPreview ? 'Enviando...' : 'Enviar Foto'}
+          </Button>
+          {formData.preview_url && (
+            <div className="flex items-center gap-2">
+              <img src={formData.preview_url} alt="Preview" className="h-10 w-10 rounded object-cover border" />
+              <button type="button" className="text-xs text-destructive hover:underline" onClick={() => updateField('preview_url', '')}>Remover</button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
